@@ -5,5 +5,6 @@ import com.Assesment.Entity.ProductMetadata;
 import java.util.List;
 
 public interface ProductService {
-    List<ProductMetadata> getProductsByShopper(String shopperId, String category, String brand, int limit);
+    List<ProductMetadata> getProductsByShopper(String shopperId, String category, String brand, int limit) throws Exception;
 }
+

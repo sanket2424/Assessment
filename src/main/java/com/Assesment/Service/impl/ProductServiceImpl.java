@@ -24,39 +24,37 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductMetadata> getProductsByShopper(String shopperId, String category, String brand, int limit) {
+        try {
+            ShoppersPersonalizedProduct personalizedProduct = personalizedProductRepository.findById(shopperId).orElse(null);
+            if (personalizedProduct == null) {
+                return Collections.emptyList();
+            }
 
-        ShoppersPersonalizedProduct personalizedProduct = personalizedProductRepository.findById(shopperId).orElse(null);
-        if (personalizedProduct == null) {
+            List<ProductShelfItem> shelfItems = personalizedProduct.getShelf();
+            shelfItems.sort(Comparator.comparing(ProductShelfItem::getRelevancyScore).reversed());
+            List<String> productIds = shelfItems.stream().map(ProductShelfItem::getProductId).collect(Collectors.toList());
+
+            List<ProductMetadata> products;
+            if (category == null && brand == null) {
+                products = productMetadataRepository.findAllById(productIds);
+            } else if (category != null && brand == null) {
+                products = productMetadataRepository.findByCategoryAndProductIdIn(category, productIds);
+            } else if (category == null && brand != null) {
+                products = productMetadataRepository.findByBrandAndProductIdIn(brand, productIds);
+            } else {
+                products = productMetadataRepository.findByCategoryAndBrandAndProductIdIn(category, brand, productIds);
+            }
+
+            if (products.size() > limit) {
+                products = products.subList(0, limit);
+            }
+
+            return products;
+        } catch (Exception e) {
+
+            e.printStackTrace();
 
             return Collections.emptyList();
         }
-
-
-        List<ProductShelfItem> shelfItems = personalizedProduct.getShelf();
-
-
-        shelfItems.sort(Comparator.comparing(ProductShelfItem::getRelevancyScore).reversed());
-
-
-        List<String> productIds = shelfItems.stream().map(ProductShelfItem::getProductId).collect(Collectors.toList());
-
-
-        List<ProductMetadata> products;
-        if (category == null && brand == null) {
-            products = productMetadataRepository.findAllById(productIds);
-        } else if (category != null && brand == null) {
-            products = productMetadataRepository.findByCategoryAndProductIdIn(category, productIds);
-        } else if (category == null && brand != null) {
-            products = productMetadataRepository.findByBrandAndProductIdIn(brand, productIds);
-        } else {
-            products = productMetadataRepository.findByCategoryAndBrandAndProductIdIn(category, brand, productIds);
-        }
-
-
-        if (products.size() > limit) {
-            products = products.subList(0, limit);
-        }
-
-        return products;
     }
 }
